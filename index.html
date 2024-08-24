@@ -148,7 +148,6 @@
             margin-top: 20px;
         }
 
-        /* New Magical Animations */
         @keyframes magicSparkle {
             0%, 100% { opacity: 0; }
             50% { opacity: 1; }
@@ -203,18 +202,70 @@
         #game.rotating {
             animation: rotateGame 10s linear infinite;
         }
+
+        #championTitle {
+            font-size: 24px;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            margin-bottom: 20px;
+        }
+
+        #winner {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e94560;
+            margin-top: 20px;
+            text-shadow: 0 0 10px rgba(233, 69, 96, 0.8);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .sprinkle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: gold;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: sprinkleFall 2s ease-in infinite;
+        }
+
+        @keyframes sprinkleFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+
+        #victoryMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: gold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            animation: fadeIn 1s ease-out;
+        }
     </style>
 </head>
 <body>
     <div id="game">
         <h1>Magical Coin Flip Game</h1>
+        <h2 id="championTitle">Get 5 To Become Champion</h2>
         <div id="coin" class="coin">H</div>
         <button id="flipButton">Flip Coin</button>
         <button id="resetButton">Reset</button>
         <p id="result"></p>
         <p id="score">Heads: 0 | Tails: 0</p>
         <p id="streakCounter">Current Streak: 0</p>
+        <p id="winner"></p>
     </div>
+    <div id="victoryMessage"></div>
 
     <audio id="flipSound" src="https://www.soundjay.com/button/button-30.mp3" preload="auto"></audio>
     <audio id="landSound" src="https://www.soundjay.com/button/button-14.mp3" preload="auto"></audio>
@@ -229,6 +280,7 @@
             const result = document.getElementById('result');
             const scoreElement = document.getElementById('score');
             const streakCounter = document.getElementById('streakCounter');
+            const winnerElement = document.getElementById('winner');
             const flipSound = document.getElementById('flipSound');
             const landSound = document.getElementById('landSound');
             const winSound = document.getElementById('winSound');
@@ -264,6 +316,10 @@
             }
 
             function flipCoin() {
+                if (headsCount >= 5 || tailsCount >= 5) {
+                    return; // Game is already over
+                }
+
                 flipButton.disabled = true;
                 flipSound.play();
                 createParticles();
@@ -271,10 +327,7 @@
                 result.textContent = 'Flipping...';
                 result.classList.remove('show');
 
-                // Magical Animation 1: Magic Sparkles
                 createMagicSparkles();
-
-                // Magical Animation 2: Rainbow Border
                 game.classList.add('rainbow-border');
 
                 setTimeout(() => {
@@ -298,14 +351,11 @@
                     coin.classList.remove('spinning');
                     flipButton.disabled = false;
 
-                    // Magical Animation 3: Pulsing Background
                     game.classList.add('pulse-background');
-
-                    // Magical Animation 4: Floating Coin
                     coin.classList.add('floating');
-
-                    // Magical Animation 5: Rotating Game
                     game.classList.add('rotating');
+
+                    checkWinner();
 
                     setTimeout(() => {
                         game.classList.remove('rainbow-border', 'pulse-background', 'rotating');
@@ -324,8 +374,53 @@
                 lastResult = null;
                 scoreElement.textContent = `Heads: ${headsCount} | Tails: ${tailsCount}`;
                 streakCounter.textContent = `Current Streak: ${currentStreak}`;
+                winnerElement.textContent = '';
                 game.classList.remove('rainbow-border', 'pulse-background', 'rotating');
                 coin.classList.remove('floating');
+                flipButton.disabled = false;
+                
+                // Hide victory message and remove any remaining sprinkles
+                document.getElementById('victoryMessage').style.display = 'none';
+                document.querySelectorAll('.sprinkle').forEach(sprinkle => sprinkle.remove());
+            }
+
+            function checkWinner() {
+                if (headsCount >= 5) {
+                    declareWinner('Heads');
+                } else if (tailsCount >= 5) {
+                    declareWinner('Tails');
+                }
+            }
+
+            function declareWinner(winner) {
+                winnerElement.textContent = `${winner} Wins!`;
+                flipButton.disabled = true;
+                showVictoryAnimation(winner);
+            }
+
+            function showVictoryAnimation(winner) {
+                const victoryMessage = document.getElementById('victoryMessage');
+                victoryMessage.textContent = `${winner} Wins!`;
+                victoryMessage.style.display = 'block';
+
+                // Create sprinkles
+                for (let i = 0; i < 100; i++) {
+                    createSprinkle();
+                }
+
+                // Hide message and remove sprinkles after 5 seconds
+                setTimeout(() => {
+                    victoryMessage.style.display = 'none';
+                    document.querySelectorAll('.sprinkle').forEach(sprinkle => sprinkle.remove());
+                }, 5000);
+            }
+
+            function createSprinkle() {
+                const sprinkle = document.createElement('div');
+                sprinkle.classList.add('sprinkle');
+                sprinkle.style.left = `${Math.random() * 100}vw`;
+                sprinkle.style.animationDuration = `${Math.random() * 2 + 1}s`;
+                document.body.appendChild(sprinkle);
             }
 
             function createMagicSparkles() {
@@ -356,7 +451,41 @@
             coin.addEventListener('mouseleave', () => {
                 coin.style.transform = '';
             });
+
+            // Sound effects
+            const victorySound = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
+            const sprinkleSound = new Audio('https://www.soundjay.com/misc/sounds/magic-chime-02.mp3');
+
+            function playVictorySound() {
+                victorySound.play();
+            }
+
+            function playSprinkleSound() {
+                sprinkleSound.play();
+            }
+
+            // Update the showVictoryAnimation function to include sounds
+            function showVictoryAnimation(winner) {
+                const victoryMessage = document.getElementById('victoryMessage');
+                victoryMessage.textContent = `${winner} Wins!`;
+                victoryMessage.style.display = 'block';
+
+                playVictorySound();
+
+                // Create sprinkles
+                for (let i = 0; i < 100; i++) {
+                    createSprinkle();
+                }
+
+                playSprinkleSound();
+
+                // Hide message and remove sprinkles after 5 seconds
+                setTimeout(() => {
+                    victoryMessage.style.display = 'none';
+                    document.querySelectorAll('.sprinkle').forEach(sprinkle => sprinkle.remove());
+                }, 5000);
+            }
         });
     </script>
 </body>
-  </html>
+    </html>
